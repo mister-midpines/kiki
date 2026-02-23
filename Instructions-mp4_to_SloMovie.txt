@@ -1,0 +1,92 @@
+# Instructions
+
+# Download movie in mp4 format
+# m4v is the same as mp4, just change the extension
+
+# Github commands
+#
+# 1. On github.com, clone the template directory, SloMovie_Template into a new repository
+# 2. On localhost, run commands below to create frames
+# 3. Create a local copy of the new repository: git clone https://github.com/mister-midpines/<repository_name>
+# 4. Delete the original frames in SloMovie_Template: git rm *.png
+# 5. Commit the deletion of frames with git commit (this will open vim to add notes). Type i to enter insert mode. Then type esc :w :q to save and quit)
+# 6. Copy the new frames into the repository's frames directory
+# 7. Add them to the repository: git add *.png
+# 8. Commit the added files (as above)
+# 9. Delete the old image_list.txt file: git rm image_list.txt
+# 10. Add the new image list: git add image_list.txt
+# 11. Commit the added image list (as above)
+# 12. Push the new files to the git server by cd'ing to the base directory of the repository: git push [possibly git push -f origin main]
+# 13a. On the github website, set up the repository to be served on website. Do <go to repository> -> Settings -> Pages [in sidebar] -> Build and Deployment
+# 13b. Set Branch to Main
+
+# To create the frames for display, do this:
+
+mkdir orig_frames gray_frames contrast_frames cropped_frames for_github
+
+# Strip frames out of mp4
+ffmpeg -i <your_movie>.mp4 -r 1 %04d.png
+wait
+
+
+# Renumber and rename files after removing any unwanted frames, if necessary
+i=0
+for orig_filename in *.png
+do
+      	    ((i+=1))
+            new_number=$(printf "%04.0f" $i)
+            mv "$orig_filename" "seq-$new_number.png"
+done
+wait
+
+cp *.png orig_frames
+wait
+
+
+# Crop so ratio is 800/480 = 1.666
+# NOTE: Image Magick throws a warning over this. Ignore it.
+for j in *.png
+    do
+    	magick convert "$j" -gravity center -crop 800:480 "$j"
+done
+wait
+
+# Rescale so height is 480 (which will make width 800)
+for j in *.png
+    do
+	echo "$j"
+	magick convert -resize x480 "$j" "$j"
+done
+
+cp *.png cropped_frames
+wait
+
+# Convert to grayscale
+for j in *.png
+    do
+	echo "$j"
+	magick convert "$j" -set colorspace Gray -separate -average "$j"
+done
+wait
+
+cp *.png gray_frames
+wait
+
+# Change brightness and contrast (test values first)
+for j in *.png
+    do
+	echo "$j"
+	magick convert -brightness-contrast 11x2 "$j" "$j"
+done
+wait
+
+cp *.png contrast_frames
+wait
+
+# Make an image list
+ls -1 *.png > image_list.txt
+sed -i -e 's/^frames\//' image_list.txt  # Add 'frames/' to the start of each line
+mv image_list.txt for_github
+
+mkdir for_github/frames
+mv *.png for_github/frames
